@@ -16,7 +16,7 @@ def display_menu():
         ("4", "Wikipedia"),
         ("5", "Google Scholar"),
         ("6", "EatRight"),
-        ("7", "open Food Fact"),
+        ("7", "Dietary Guidelines"),
         ("8", "All Sources (except Wikipedia)")
     ]
 

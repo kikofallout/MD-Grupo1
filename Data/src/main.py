@@ -7,6 +7,7 @@ from modules.pubmed_utils import search_pubmed
 from modules.semanticscholar_utils import search_semanticscholar
 from modules.wikipedia_utils import search_wikipedia
 from modules.eatright_utils import process_pdf_links
+from modules.dietaryguidelines_utils import process_dietary_guidelines_pdfs
 import time
 
 def search_and_print(source, func, query, max_articles=1, year_range=(2020, 2025)):
@@ -37,7 +38,7 @@ def main():
         "4": ("Wikipedia", search_wikipedia),
         "5": ("Google Scholar", search_google_scholar),
         "6": ("EatRight", None),  
-        "7": ("Open Food Fact", None),
+        "7": ("Dietary Guidelines", None),
         "8": ("All Sources", None)
     }
     
@@ -68,7 +69,12 @@ def main():
                 ]
                 process_pdf_links(pdf_urls) 
                 console.print("[bold green]✔️ Articles from EatRight have been saved to MongoDB and Pinecone![/bold green]")
-
+            
+            elif choice == "7":
+                console.print(f"\n[bold cyan]🔎 Extracting articles from Dietary Guidelines...[/bold cyan]")
+                process_dietary_guidelines_pdfs()
+                console.print("[bold green]✔️ Articles from Dietary Guidelines have been saved to MongoDB and Pinecone![/bold green]")
+            
             elif choice == "8":
                 max_articles = int(Prompt.ask("[bold white]How many articles per source?[/bold white]", default="1"))
                 for key, (source_name, search_func) in sources.items():

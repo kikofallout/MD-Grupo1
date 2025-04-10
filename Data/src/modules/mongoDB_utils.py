@@ -101,6 +101,19 @@ def extract_paper_attributes(paper, source):
             "journal": "",
             "last_updated": paper.get("last_updated", "")
         }
+    elif source == "DietaryGuidelines":
+        return {
+            "title": paper.get("title", ""),
+            "authors": paper.get("authors", ""),
+            "year": paper.get("year", 2025),
+            "source": "Dietary Guidelines",
+            "abstract": paper.get("abstract", ""),
+            "keywords": paper.get("keywords", []),
+            "doi": paper.get("doi", ""),
+            "journal": paper.get("journal", ""),
+            "last_updated": paper.get("last_updated", "")
+        }
+
     else:
         raise ValueError(f"Unsupported source: {source}")
 
@@ -142,8 +155,8 @@ def save_paper_to_mongo_and_pinecone(paper, source, collection, index):
         "doi": paper_data["doi"],
         "journal": paper_data["journal"],
         "last_updated": paper_data["last_updated"],
-        "spacy_entities": spacy_results["entities"],
-        "spacy_matched_terms": spacy_results["matched_terms"],
+        "spacy_entities": spacy_results["entities"][:200], 
+        "spacy_matched_terms": {key: values[:50] for key, values in spacy_results["matched_terms"].items()}, 
         "chunks": spacy_results["chunks"],
     }
     collection.insert_one(doc)
@@ -162,7 +175,7 @@ def save_paper_to_mongo_and_pinecone(paper, source, collection, index):
         metadata = {
             "paper_id": paper_id,
             "chunk_idx": i,
-            "chunk_text": chunk,  # Store the chunk text in Pinecone metadata
+            "chunk_text": chunk[:2000],   # Store the chunk text in Pinecone metadata
             "title": paper_data["title"],
             "source": paper_data["source"],
             "year": paper_data["year"],
