@@ -1,0 +1,3 @@
+modules/.env
+.DS_Store
+modules/__pycache__

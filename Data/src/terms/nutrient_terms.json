@@ -1,0 +1,13 @@
+{
+    "nutrient_terms" : [
+        "food allergies", "food intolerances", "vitamin a", "vitamin b", "vitamin c", "vitamin d", "vitamin e", "calcium", 
+    "iron", "magnesium", "zinc", "potassium", "sodium", "omega-3 fatty acids", 
+    "omega-6 fatty acids", "proteins", "fats", "carbohydrates", "fiber", "antioxidants",
+    "phytochemicals", "flavonoids", "polyphenols", "carotenoids", "lycopene",
+    "beta-carotene", "lutein", "zeaxanthin", "selenium", "folate", "vitamin b12",
+    "vitamin k", "vitamin b6", "niacin", "riboflavin", "thiamine", "pantothenic acid",
+    "biotin", "choline", "manganese", "copper", "chromium", "molybdenum",
+    "iodine", "fluoride", "sulfur", "chloride", "vitamin b3", "vitamin b5",
+    "vitamin b7", "vitamin b9", "vitamin b1", "vitamin b2", "vitamin b4"
+    ]
+}

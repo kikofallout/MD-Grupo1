@@ -1,0 +1,19 @@
+{
+    "food_terms": [
+        "fruits", "vegetables", "grains", "proteins", "carbohydrates", "fiber", 
+    "vitamins", "minerals", "dairy", "legumes", "seeds", "nuts", "berries", "spinach", 
+    "avocado", "salmon", "chicken", "beef", "eggplant", "carrot", "tomato", 
+    "broccoli", "garlic", "onion", "pumpkin", "sweet potato", "cauliflower", "cucumber", 
+    "peas", "asparagus", "zucchini",
+    "bell pepper", "lettuce", "kale", "cabbage", "celery", "radish", "mushroom",
+    "egg", "tofu", "quinoa", "rice", "pasta", "bread", "oats", "barley",
+    "lentils", "chickpeas", "black beans", "kidney beans", "soybeans", "peanuts",
+    "almonds", "walnuts", "cashews", "chia seeds", "flaxseeds", "pumpkin seeds",
+    "sunflower seeds", "sesame seeds", "coconut", "olive oil", "canola oil",
+    "butter", "cheese", "yogurt", "milk", "cream", "ice cream", "sour cream",
+    "sugar", "honey", "maple syrup", "agave nectar", "molasses", "corn syrup",
+    "salt", "pepper", "spices", "herbs", "basil", "oregano", "thyme", "rosemary",
+    "cinnamon", "ginger", "turmeric", "cumin", "paprika", "chili powder",
+    "vanilla", "cocoa", "chocolate", "coffee", "tea", "juice", "soda", "water"
+    ]
+}

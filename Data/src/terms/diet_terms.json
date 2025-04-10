@@ -1,0 +1,27 @@
+{
+    "diet_terms": [
+        "diet", "mediterranean diet", "ketogenic diet", "paleo diet", "vegan diet", "vegetarian diet", 
+    "gluten-free diet", "low-carb diet", "intermittent fasting", "high-protein diet", 
+    "low-fat diet", "whole30", "raw food diet", "clean eating", "flexitarian diet",
+    "DASH diet", "atkins diet", "south beach diet", "zone diet", "blood type diet",
+    "macrobiotic diet", "anti-inflammatory diet", "FODMAP diet", "Sirtfood diet",
+    "carnivore diet", "pescatarian diet", "fruitarian diet", "low-sodium diet",
+    "low-sugar diet", "high-fiber diet", "high-carb diet", "low-calorie diet",
+    "low-glycemic diet", "alkaline diet", "detox diet", "cabbage soup diet",
+    "grapefruit diet", "master cleanse", "juice cleanse", "meal replacement diet",
+    "medically supervised diet", "very low-calorie diet", "liquid diet", "fasting-mimicking diet",
+    "ketosis", "nutritional ketosis", "caloric restriction", "time-restricted eating",
+    "nutrient timing", "meal prepping", "portion control", "mindful eating",
+    "intuitive eating", "emotional eating", "binge eating", "disordered eating",
+    "eating disorders", "food addiction", "food sensitivity", "food intolerance",
+    "food allergy", "anaphylaxis", "cross-reactivity", "gluten sensitivity",
+    "lactose intolerance", "fructose malabsorption", "histamine intolerance",
+    "salicylate sensitivity", "oxalate sensitivity", "nightshade sensitivity",
+    "lectin sensitivity", "sugar addiction", "carbohydrate addiction", "fat adaptation",
+    "protein leverage", "satiety", "hunger hormones", "leptin", "ghrelin",
+    "insulin", "glucagon", "cortisol", "adrenaline", "norepinephrine", "serotonin",
+    "dopamine", "endorphins", "oxytocin", "neuropeptide Y", "cholecystokinin",
+    "peptide YY", "glucagon-like peptide-1", "ghrelin", "orexin", "melatonin",
+    "circadian rhythm", "chrononutrition", "chronobiology", "chronotherapy"
+    ]
+}
