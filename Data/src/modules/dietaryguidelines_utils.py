@@ -3,63 +3,28 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
-import requests
 from PyPDF2 import PdfReader
-import tempfile
-from datetime import datetime
+from io import BytesIO
+import os
+import requests
+import time
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from modules.spaCy_utils import process_text
-from modules.mongoDB_utils import save_to_mongo_and_pinecone
-from tqdm import tqdm  # Adicionando a importação do tqdm
-import requests
-from requests.adapters import HTTPAdapter, Retry
-import os
-import requests
-from requests.adapters import HTTPAdapter, Retry
-import re
-from datetime import datetime
-import time
-import requests
-from PyPDF2 import PdfReader
-from io import BytesIO
-import pdfplumber
-import pdfplumber
-import pytesseract
-from pdf2image import convert_from_path
-from PIL import Image
-from io import BytesIO
-import requests
-import fitz  # PyMuPDF
-from io import BytesIO
-from tqdm import tqdm
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
+from modules.spaCy_utils import process_text, normalize_text, generate_embeddings, food_matcher, nutrient_matcher, diet_matcher, eating_habits_matcher
 from modules.mongoDB_utils import save_to_mongo_and_pinecone
 from collections import Counter
-import string
 import spacy
-from modules.spaCy_utils import process_text
-from modules.spaCy_utils import normalize_text
-import os
 from docx import Document
-from selenium.webdriver.common.by import By
-import time
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from bs4 import BeautifulSoup
-from collections import Counter
+from tqdm import tqdm
+import fitz  # PyMuPDF
 import urllib.request
-import fitz
-from modules.spaCy_utils import normalize_text
-from modules.spaCy_utils import generate_embeddings
-from modules.spaCy_utils import food_matcher, nutrient_matcher, diet_matcher, eating_habits_matcher
+import string
 
-BASE_URL = "https://www.dietaryguidelines.gov/resources/2020-2025-dietary-guidelines-online-materials"
-#BASE_URL = "https://www.dietaryguidelines.gov"
+BASE_URLS = [
+    "https://www.dietaryguidelines.gov/resources/2020-2025-dietary-guidelines-online-materials",
+    "https://www.dietaryguidelines.gov" 
+]
 
 def extract_text_from_pdf_url(url):
     try:
@@ -74,7 +39,7 @@ def extract_text_from_pdf_url(url):
             doc = fitz.open(stream=pdf_file.read(), filetype="pdf")
             text = ""
             for i, page in enumerate(doc):
-                print(f"📄 Extraindo texto da página {i+1}/{len(doc)}")
+                #print(f"📄 Extraindo texto da página {i+1}/{len(doc)}")
                 text += page.get_text()
             return text
 
@@ -82,7 +47,7 @@ def extract_text_from_pdf_url(url):
         print(f"❌ Erro ao extrair texto do PDF de {url}: {e}")
         return None
     
-def get_pdf_links_selenium():
+def get_pdf_links_selenium(base_url):
     """Usa Selenium para extrair os links dos PDFs da subpágina."""
     print("🚀 Iniciando o Selenium...")
     chrome_options = Options()
@@ -97,11 +62,8 @@ def get_pdf_links_selenium():
 
     try:
         print("🔎 Acessando a página com Selenium...")
-        print("🌐 URL:", BASE_URL)
+        driver.get(base_url)
 
-        driver.get(BASE_URL)
-
-        # Espera até que pelo menos um link de PDF esteja presente
         WebDriverWait(driver, 60).until(
             #EC.presence_of_element_located((By.XPATH, "//a[contains(@href, '.pdf')]"))
             #EC.presence_of_element_located((By.TAG_NAME, "a")) 
@@ -133,10 +95,14 @@ def get_pdf_links_selenium():
     return list(set(pdf_links))
 
 def process_dietary_guidelines_pdfs():
-    print("📥 Buscando links de PDFs no site via Selenium...")
-    pdf_links = get_pdf_links_selenium()
-    print(f"🔗 {len(pdf_links)} links encontrados.")
+    print("📥 Buscando links de PDFs nos sites via Selenium...")
 
+    pdf_links = []
+    # Para cada base_url, faça a coleta de PDFs
+    for base_url in BASE_URLS:
+        pdf_links.extend(get_pdf_links_selenium(base_url))
+
+    print(f"🔗 {len(pdf_links)} links encontrados em ambos os sites.")
     return pdf_links
 
 def process_dietary_pdfs():
