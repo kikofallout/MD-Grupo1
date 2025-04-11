@@ -5,10 +5,11 @@ from modules.googleScholar_utils import search_google_scholar
 from modules.menu_utils import display_menu
 from modules.pubmed_utils import search_pubmed
 from modules.semanticscholar_utils import search_semanticscholar
-from modules.wikipedia_utils import search_wikipedia
+from modules.wikipedia_utils import search_wikipedia, load_terms_from_json_folder, search_all_terms_and_print
 from modules.eatright_utils import process_pdf_links
-from modules.dietaryguidelines_utils import process_dietary_guidelines_pdfs
+from modules.dietaryguidelines_utils import process_dietary_pdfs
 import time
+from pathlib import Path
 
 def search_and_print(source, func, query, max_articles=1, year_range=(2020, 2025)):
     """Performs the search and prints the results."""
@@ -72,7 +73,7 @@ def main():
             
             elif choice == "7":
                 console.print(f"\n[bold cyan]🔎 Extracting articles from Dietary Guidelines...[/bold cyan]")
-                process_dietary_guidelines_pdfs()
+                process_dietary_pdfs()
                 console.print("[bold green]✔️ Articles from Dietary Guidelines have been saved to MongoDB and Pinecone![/bold green]")
             
             elif choice == "8":
@@ -83,8 +84,11 @@ def main():
             else:
                 source_name, search_func = sources[choice]
                 if source_name == "Wikipedia":
-                    query = Prompt.ask("[bold white]Enter a search term:[/bold white]")
-                    search_and_print(source_name, search_func, query)
+                    #query = Prompt.ask("[bold white]Enter a search term:[/bold white]")
+                    #search_and_print(source_name, search_func, query)
+                    json_folder_path = Path("terms")  
+                    search_all_terms_and_print(json_folder_path)
+                        
                 else:
                     max_articles = int(Prompt.ask("[bold white]How many articles?[/bold white]", default="1"))
                     search_and_print(source_name, search_func, query, max_articles)

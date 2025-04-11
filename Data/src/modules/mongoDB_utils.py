@@ -9,15 +9,15 @@ from pinecone import Pinecone, ServerlessSpec
 def configure_mongoDB_connection():
     """Configure MongoDB connection."""
     client = MongoClient("mongodb://localhost:27017/")
-    db = client["nutrition"]
-    collection = db["papers"]
+    db = client["md_nutrition_db"] #md_nutrition_db
+    collection = db["data"] #data
     return collection
 
 def configure_pinecone_connection():
     """Configure Pinecone connection."""
     pinecone_api_key = os.getenv("PINECONE_API_KEY")
     pc = Pinecone(api_key=pinecone_api_key)
-    index_name = "papers"
+    index_name = "data"
     if index_name not in pc.list_indexes().names():
         pc.create_index(
             name=index_name,
@@ -113,6 +113,19 @@ def extract_paper_attributes(paper, source):
             "journal": paper.get("journal", ""),
             "last_updated": paper.get("last_updated", "")
         }
+    elif source == "Wikipedia":
+        return {
+            "title": paper.get("title", ""),
+            "authors": "Wikipedia Contributors",
+            "year": 0,
+            "source": "Wikipedia",
+            "abstract": paper.get("summary", ""),
+            "keywords": [],
+            "doi": "",
+            "journal": "Wikipedia",
+            "last_updated": paper.get("url", "")  
+        }
+
 
     else:
         raise ValueError(f"Unsupported source: {source}")
