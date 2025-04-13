@@ -4,7 +4,7 @@ import json
 
 # Conectar ao MongoDB
 client = MongoClient("mongodb://localhost:27017/")
-db = client["md_nutrition_db"]
+db = client["nutrition"]
 collection = db["data"]
 
 # Exportar para JSON

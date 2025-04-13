@@ -9,15 +9,15 @@ from pinecone import Pinecone, ServerlessSpec
 def configure_mongoDB_connection():
     """Configure MongoDB connection."""
     client = MongoClient("mongodb://localhost:27017/")
-    db = client["md_nutrition_db"] #md_nutrition_db
-    collection = db["data"] #data
+    db = client["nutrition"] #md_nutrition_db
+    collection = db["data"] #datas
     return collection
 
 def configure_pinecone_connection():
     """Configure Pinecone connection."""
     pinecone_api_key = os.getenv("PINECONE_API_KEY")
     pc = Pinecone(api_key=pinecone_api_key)
-    index_name = "data"
+    index_name = "data"  
     if index_name not in pc.list_indexes().names():
         pc.create_index(
             name=index_name,
@@ -130,33 +130,39 @@ def extract_paper_attributes(paper, source):
     else:
         raise ValueError(f"Unsupported source: {source}")
 
+
 def save_paper_to_mongo_and_pinecone(paper, source, collection, index):
     """Save a single paper to MongoDB and Pinecone."""
-    # Extract paper attributes
+
     paper_data = extract_paper_attributes(paper, source)
     abstract = paper_data["abstract"]
-    
-    # Process the abstract with spaCy
-    #spacy_results = process_text(abstract) if abstract else {
-     #   "entities": [], "matched_terms": {}, "chunks": [], "embeddings": np.zeros((0, 384))
-    #}
+
     spacy_results = {
         "entities": paper.get("spacy_entities", []),
         "matched_terms": paper.get("spacy_matched_terms", {}),
         "chunks": paper.get("chunks", []),
         "embeddings": paper.get("embeddings", [])
     }
-    #if not spacy_results["chunks"] or not spacy_results["embeddings"]:
-    #if len(spacy_results["chunks"]) == 0 or spacy_results["embeddings"].size == 0:
+
     if not spacy_results["chunks"] or spacy_results["embeddings"].shape[0] == 0:
         spacy_results = process_text(abstract) if abstract else {
             "entities": [], "matched_terms": {}, "chunks": [], "embeddings": np.zeros((0, 384))
         }
 
-    # Generate a unique paper ID
     paper_id = generate_unique_id()
-    
-    # Create MongoDB document
+    topic = infer_topic_from_text(paper_data["title"], abstract)
+    source_levels = {
+            "PubMed": 2,
+            "Europe PMC": 3,
+            "Wikipedia": 3,
+            "Semantic Scholar": 4,
+            "Google Scholar": 4,
+            "EatRight": 5,
+            "Dietary Guidelines": 5
+        }
+    hierarchical_level = source_levels.get(paper_data["source"], 2)
+    link = paper.get("url", "") or paper.get("link", "") or paper.get("doi", "")
+
     doc = {
         "paper_id": paper_id,
         "title": paper_data["title"],
@@ -168,46 +174,97 @@ def save_paper_to_mongo_and_pinecone(paper, source, collection, index):
         "doi": paper_data["doi"],
         "journal": paper_data["journal"],
         "last_updated": paper_data["last_updated"],
-        "spacy_entities": spacy_results["entities"][:200], 
-        "spacy_matched_terms": {key: values[:50] for key, values in spacy_results["matched_terms"].items()}, 
+        "spacy_entities": spacy_results["entities"][:200],
+        "spacy_matched_terms": {key: values[:50] for key, values in spacy_results["matched_terms"].items()},
         "chunks": spacy_results["chunks"],
+        "topic": topic,
+        "hierarchical_level": hierarchical_level,
+        "link": link,
     }
     collection.insert_one(doc)
-    
-    # Save embeddings and chunk text to Pinecone
-    embeddings = spacy_results["embeddings"]  # Shape: [n_chunks, 384]
+
+    embeddings = spacy_results["embeddings"]
     chunks = spacy_results["chunks"]
+
     if len(embeddings) != len(chunks):
         print(f"Warning: Mismatch between embeddings ({len(embeddings)}) and chunks ({len(chunks)}) for paper {paper_id}")
         return
+
     for i, (embedding, chunk) in enumerate(zip(embeddings, chunks)):
         if embedding.shape != (384,):
             print(f"Invalid embedding shape for chunk {i} of paper {paper_id}: {embedding.shape}")
             continue
+
         chunk_id = f"{paper_id}_chunk_{i}"
-        metadata = {
+
+        source_levels = {
+            "PubMed": 2,
+            "Europe PMC": 3,
+            "Wikipedia": 3,
+            "Semantic Scholar": 4,
+            "Google Scholar": 4,
+            "EatRight": 5,
+            "Dietary Guidelines": 5
+        }
+        hierarchical_level = source_levels.get(paper_data["source"], 2)
+        topic = infer_topic_from_text(paper_data["title"], abstract)
+
+        # Construir campos obrigatórios do novo formato
+        minimal_metadata = {
+            "chunk_id": chunk_id,
+            "chunk_text": chunk[:2000],
+            "title": paper_data["title"],
+            "link": paper.get("url", "") or paper.get("link", "") or paper.get("doi", ""),
+            "year": str(paper_data["year"]),
+            "topic": topic,
+            "hierarchical_level": hierarchical_level
+        }
+
+        # Guardar no Pinecone
+        full_metadata = {
+            **minimal_metadata,
             "paper_id": paper_id,
             "chunk_idx": i,
-            "chunk_text": chunk[:2000],   # Store the chunk text in Pinecone metadata
-            "title": paper_data["title"],
             "source": paper_data["source"],
-            "year": paper_data["year"],
             "doi": paper_data["doi"]
         }
-        index.upsert(vectors=[(chunk_id, embedding.tolist(), metadata)])
+
+        index.upsert(vectors=[(chunk_id, embedding.tolist(), full_metadata)])
 
 def save_to_mongo_and_pinecone(papers, source):
     """Save articles to MongoDB and Pinecone."""
     if not papers:
         print("No articles to save.")
         return
-    
-    # Configure connections
+
     collection = configure_mongoDB_connection()
     index = configure_pinecone_connection()
-    
-    # Process each paper
+
     for paper in tqdm(papers, desc=f"Saving {source} articles"):
         save_paper_to_mongo_and_pinecone(paper, source, collection, index)
-    
+
     print(f"All {source} articles have been successfully saved!")
+
+
+def infer_topic_from_text(title, abstract):
+    text = f"{title} {abstract}".lower()
+
+    topic_keywords = {
+        "diabetes": ["diabetes", "insulin", "blood sugar", "glucose"],
+        "cardiovascular health": ["heart", "cardiovascular", "cholesterol", "blood pressure"],
+        "obesity": ["obesity", "overweight", "bmi", "body mass"],
+        "nutrition": ["nutrition", "diet", "micronutrient", "macronutrient"],
+        "gut health": ["gut", "microbiome", "digestive"],
+        "pregnancy": ["pregnancy", "maternal", "prenatal", "gestation"],
+        "cancer": ["cancer", "tumor", "oncology"],
+        "mental health": ["depression", "anxiety", "mental", "cognition", "cognitive"],
+        "supplements": ["supplement", "vitamin", "mineral", "omega-3", "iron", "zinc"],
+    }
+
+    for topic, keywords in topic_keywords.items():
+        if any(keyword in text for keyword in keywords):
+            return topic
+
+    return "general"
+
+
