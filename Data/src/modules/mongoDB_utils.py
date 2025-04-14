@@ -5,6 +5,7 @@ from pymongo import MongoClient
 from tqdm import tqdm
 from modules.spaCy_utils import process_text
 from pinecone import Pinecone, ServerlessSpec
+import json
 
 def configure_mongoDB_connection():
     """Configure MongoDB connection."""
@@ -149,7 +150,7 @@ def save_paper_to_mongo_and_pinecone(paper, source, collection, index):
             "entities": [], "matched_terms": {}, "chunks": [], "embeddings": np.zeros((0, 384))
         }
 
-    paper_id = generate_unique_id()
+    paper_id = generate_unique_id()  # Geração do ID principal do artigo
     topic = infer_topic_from_text(paper_data["title"], abstract)
     source_levels = {
             "PubMed": 2,
@@ -164,7 +165,7 @@ def save_paper_to_mongo_and_pinecone(paper, source, collection, index):
     link = paper.get("url", "") or paper.get("link", "") or paper.get("doi", "")
 
     doc = {
-        "paper_id": paper_id,
+        "paper_id": paper_id,  # O ID é o mesmo para o MongoDB
         "title": paper_data["title"],
         "authors": paper_data["authors"],
         "year": paper_data["year"],
@@ -190,24 +191,19 @@ def save_paper_to_mongo_and_pinecone(paper, source, collection, index):
         print(f"Warning: Mismatch between embeddings ({len(embeddings)}) and chunks ({len(chunks)}) for paper {paper_id}")
         return
 
+    ids_filename = "ids.json"
+    try:
+        with open(ids_filename, "r", encoding="utf-8") as f:
+            existing_ids = set(json.load(f))
+    except FileNotFoundError:
+        existing_ids = set()
+
     for i, (embedding, chunk) in enumerate(zip(embeddings, chunks)):
         if embedding.shape != (384,):
             print(f"Invalid embedding shape for chunk {i} of paper {paper_id}: {embedding.shape}")
             continue
 
-        chunk_id = f"{paper_id}_chunk_{i}"
-
-        source_levels = {
-            "PubMed": 2,
-            "Europe PMC": 3,
-            "Wikipedia": 3,
-            "Semantic Scholar": 4,
-            "Google Scholar": 4,
-            "EatRight": 5,
-            "Dietary Guidelines": 5
-        }
-        hierarchical_level = source_levels.get(paper_data["source"], 2)
-        topic = infer_topic_from_text(paper_data["title"], abstract)
+        chunk_id = f"{paper_id}_chunk_{i}"  # O chunk_id inclui o paper_id
 
         # Construir campos obrigatórios do novo formato
         minimal_metadata = {
@@ -223,13 +219,19 @@ def save_paper_to_mongo_and_pinecone(paper, source, collection, index):
         # Guardar no Pinecone
         full_metadata = {
             **minimal_metadata,
-            "paper_id": paper_id,
+            "paper_id": paper_id,  # Garantir que o paper_id no Pinecone é o mesmo do MongoDB
             "chunk_idx": i,
             "source": paper_data["source"],
             "doi": paper_data["doi"]
         }
 
         index.upsert(vectors=[(chunk_id, embedding.tolist(), full_metadata)])
+        # Adicionar o ID à lista
+        existing_ids.add(chunk_id)
+    
+    with open(ids_filename, "w", encoding="utf-8") as f:
+        json.dump(list(existing_ids), f, indent=4, ensure_ascii=False)
+
 
 def save_to_mongo_and_pinecone(papers, source):
     """Save articles to MongoDB and Pinecone."""

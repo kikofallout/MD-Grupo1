@@ -8,8 +8,14 @@ from modules.semanticscholar_utils import search_semanticscholar
 from modules.wikipedia_utils import search_wikipedia, load_terms_from_json_folder, search_all_terms_and_print
 from modules.eatright_utils import process_pdf_links
 from modules.dietaryguidelines_utils import process_dietary_pdfs
+from modules.mongoDB_utils import configure_mongoDB_connection, save_paper_to_mongo_and_pinecone, configure_pinecone_connection
 import time
+import pandas as pd
+import uuid
+from datetime import datetime
+from sentence_transformers import SentenceTransformer
 from pathlib import Path
+from sentence_transformers import SentenceTransformer
 
 def search_and_print(source, func, query, max_articles=1, year_range=(2020, 2025)):
     """Performs the search and prints the results."""
@@ -40,7 +46,8 @@ def main():
         "5": ("Google Scholar", search_google_scholar),
         "6": ("EatRight", None),  
         "7": ("Dietary Guidelines", None),
-        "8": ("All Sources", None)
+        "8": ("All Sources", None),
+        "9": ("EatRight csv", None)
     }
     
     while True:
@@ -81,6 +88,39 @@ def main():
                 for key, (source_name, search_func) in sources.items():
                     if key != "4" and key != "7":  # Exclude Wikipedia and All Sources
                         search_and_print(source_name, search_func, query, max_articles)
+            elif choice == "9":
+                console.print(f"\n[bold cyan]📤 Exporting and formatting EatRight CSV data...[/bold cyan]")
+                
+                # Conexões
+                collection = configure_mongoDB_connection()
+                pinecone_index = configure_pinecone_connection()
+                model = SentenceTransformer("BAAI/bge-small-en-v1.5")
+
+                # Carregar CSV
+                csv_path = "files/eatright_articles.csv"
+                df = pd.read_csv(csv_path)
+
+                for index, row in df.iterrows():
+                    # Montar o dicionário no formato padrão de entrada
+                    paper = {
+                        "title": row['title'],
+                        "url": row['url'],
+                        "metadata": row.get('metadata', {}),
+                        "content": row['content'],
+                        "section": row['section'],
+                        "abstract": row['content'],  # Usamos o content como abstract
+                        "keywords": [],
+                        "authors": "",
+                        "year": datetime.now().year,
+                        "spacy_matched_terms": {},  # Pode ser preenchido no processamento
+                    }
+
+                    # Opcional: você pode passar `paper["spacy_entities"]`, etc. também se tiver
+                    save_paper_to_mongo_and_pinecone(paper, "EatRight", collection, pinecone_index)
+
+                console.print("[bold green]✔️ EatRight CSV data successfully exported to MongoDB and Pinecone![/bold green]")
+
+                
             else:
                 source_name, search_func = sources[choice]
                 if source_name == "Wikipedia":
