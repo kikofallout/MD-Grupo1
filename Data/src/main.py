@@ -16,6 +16,9 @@ from datetime import datetime
 from sentence_transformers import SentenceTransformer
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
+from modules.nih_utils import process_nih_articles
+from modules.oms_utils import process_who_articles
+
 
 def search_and_print(source, func, query, max_articles=1, year_range=(2020, 2025)):
     """Performs the search and prints the results."""
@@ -37,7 +40,20 @@ def main():
     """Runs searches based on user choice."""
     console = Console()
     query = '"eating habits" AND "nutrition" AND ("health outcomes" OR "dietary patterns")'
-    
+    #"eating habits" AND "nutrition" AND ("health outcomes" OR "dietary patterns")
+    #"dietary intake" AND "eating habits" AND "nutrition"
+    #"nutritional status" AND "eating habits" AND ("public health" OR "chronic disease")
+    #"nutrition education" AND "eating habits" AND ("prevention" OR "public health")
+    #"healthy eating" AND "nutrition" AND ("policy" OR "intervention")
+    #"plant-based diet" AND "eating behavior" AND ("health benefits" OR "disease prevention")
+    #"dietary patterns" AND "nutritional intake" AND "chronic diseases"
+    #"adolescents" AND "eating habits" AND "nutrition"
+    #"elderly" AND "nutritional status" AND "dietary patterns"
+    #"children" AND "nutrition" AND "eating behavior"
+
+
+
+
     sources = {
         "1": ("PubMed", search_pubmed),
         "2": ("Europe PMC", search_europe_pmc),
@@ -46,8 +62,10 @@ def main():
         "5": ("Google Scholar", search_google_scholar),
         "6": ("EatRight", None),  
         "7": ("Dietary Guidelines", None),
-        "8": ("All Sources", None),
-        "9": ("EatRight csv", None)
+        "8": ("NIH", process_nih_articles),
+        "9": ("OMS", process_who_articles),
+        "10": ("All Sources", None),
+        "11": ("EatRight csv", None)
     }
     
     while True:
@@ -84,11 +102,24 @@ def main():
                 console.print("[bold green]✔️ Articles from Dietary Guidelines have been saved to MongoDB and Pinecone![/bold green]")
             
             elif choice == "8":
+                console.print(f"\n[bold cyan]🔎 Extracting articles from NIH...[/bold cyan]")
+                nih_articles = process_nih_articles()
+                if nih_articles:
+                    console.print(f"[bold green]✔️ {len(nih_articles)} NIH articles saved to MongoDB and Pinecone![/bold green]")
+                else:
+                    console.print("[bold yellow]⚠️ No NIH articles found.[/bold yellow]")
+
+            elif choice == "9":
+                console.print(f"\n[bold cyan]🔎 Extracting articles from WHO...[/bold cyan]")
+                process_who_articles()
+                console.print("[bold green]✔️ WHO articles saved.[/bold green]")
+
+            elif choice == "10":
                 max_articles = int(Prompt.ask("[bold white]How many articles per source?[/bold white]", default="1"))
                 for key, (source_name, search_func) in sources.items():
                     if key != "4" and key != "7":  # Exclude Wikipedia and All Sources
                         search_and_print(source_name, search_func, query, max_articles)
-            elif choice == "9":
+            elif choice == "11":
                 console.print(f"\n[bold cyan]📤 Exporting and formatting EatRight CSV data...[/bold cyan]")
                 
                 # Conexões

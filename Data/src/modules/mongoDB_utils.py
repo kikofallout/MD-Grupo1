@@ -10,15 +10,15 @@ import json
 def configure_mongoDB_connection():
     """Configure MongoDB connection."""
     client = MongoClient("mongodb://localhost:27017/")
-    db = client["nutrition"] #md_nutrition_db
-    collection = db["data"] #datas
+    db = client["nutritionTest"] #md_nutrition_db
+    collection = db["dataTest"] #datas
     return collection
 
 def configure_pinecone_connection():
     """Configure Pinecone connection."""
     pinecone_api_key = os.getenv("PINECONE_API_KEY")
     pc = Pinecone(api_key=pinecone_api_key)
-    index_name = "data"  
+    index_name = "datatest"  
     if index_name not in pc.list_indexes().names():
         pc.create_index(
             name=index_name,
@@ -126,7 +126,31 @@ def extract_paper_attributes(paper, source):
             "journal": "Wikipedia",
             "last_updated": paper.get("url", "")  
         }
+    elif source == "OMS":
+        return {
+            "title": paper.get("title", ""),
+            "authors": "World Health Organization",
+            "year": 0,
+            "source": "OMS",
+            "abstract": paper.get("summary", "") or paper.get("content", ""),
+            "keywords": [],
+            "doi": "",
+            "journal": "World Health Organization",
+            "last_updated": paper.get("url", "")
+        }
 
+    elif source == "NIH":
+        return {
+            "title": paper.get("title", ""),
+            "authors": "National Institutes of Health",
+            "year": 0,
+            "source": "NIH",
+            "abstract": paper.get("summary", "") or paper.get("content", ""),
+            "keywords": [],
+            "doi": "",
+            "journal": "NIH",
+            "last_updated": paper.get("url", "")
+        }
 
     else:
         raise ValueError(f"Unsupported source: {source}")
@@ -145,21 +169,26 @@ def save_paper_to_mongo_and_pinecone(paper, source, collection, index):
         "embeddings": paper.get("embeddings", [])
     }
 
-    if not spacy_results["chunks"] or spacy_results["embeddings"].shape[0] == 0:
+    #if not spacy_results["chunks"] or spacy_results["embeddings"].shape[0] == 0:
+    if not spacy_results["chunks"] or len(spacy_results["embeddings"]) == 0:
         spacy_results = process_text(abstract) if abstract else {
             "entities": [], "matched_terms": {}, "chunks": [], "embeddings": np.zeros((0, 384))
         }
+        print("Chunks:", spacy_results["chunks"])
+        print("Embeddings shape:", np.array(spacy_results["embeddings"]).shape)
 
     paper_id = generate_unique_id()  # Geração do ID principal do artigo
     topic = infer_topic_from_text(paper_data["title"], abstract)
     source_levels = {
             "PubMed": 2,
-            "Europe PMC": 3,
-            "Wikipedia": 3,
-            "Semantic Scholar": 4,
-            "Google Scholar": 4,
-            "EatRight": 5,
-            "Dietary Guidelines": 5
+            "Europe PMC": 2,
+            "Wikipedia": 2,
+            "Semantic Scholar": 2,
+            "Google Scholar": 2,
+            "EatRight": 3,
+            "Dietary Guidelines": 3,
+            "OMS": 1,
+            "NIH": 1
         }
     hierarchical_level = source_levels.get(paper_data["source"], 2)
     link = paper.get("url", "") or paper.get("link", "") or paper.get("doi", "")

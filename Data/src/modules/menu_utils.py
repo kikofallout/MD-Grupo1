@@ -17,7 +17,12 @@ def display_menu():
         ("5", "Google Scholar"),
         ("6", "EatRight"),
         ("7", "Dietary Guidelines"),
-        ("8", "All Sources (except Wikipedia)")
+        ("8", "NIH (National Institutes of Health)"),
+        ("9", "WHO (World Health Organization)"),
+        ("10", "All Sources (except Wikipedia)"),
+        ("11", "EatRight csv"),
+        #("8", "All Sources (except Wikipedia)"),
+        #("9", "EatRight csv"),
     ]
 
     for option, source in sources:
